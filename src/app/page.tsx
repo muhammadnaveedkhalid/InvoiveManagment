@@ -34,39 +34,38 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [showDebug, setShowDebug] = useState(false)
   const [isInvoicePanelOpen, setIsInvoicePanelOpen] = useState(true)
+  const [showConnect, setShowConnect] = useState(false)
+  const [isQBConnected, setIsQBConnected] = useState(false)
+  const [initialLoad, setInitialLoad] = useState(true)
 
-  // Check authentication on page load and URL changes
+  // Check QuickBooks auth status once on component mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // First check localStorage
-        if (isQuickBooksReady()) {
-          setIsAuthenticated(true);
-          return;
-        }
-
-        // Check with server
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-        const response = await fetch(`${baseUrl}/api/auth/status`)
-        const data = await response.json()
-        setIsAuthenticated(data.authenticated)
-
-        // Check URL parameters for auth success
-        const urlParams = new URLSearchParams(window.location.search);
-        const authStatus = urlParams.get('auth');
-        if (authStatus === 'success') {
-          console.log('Auth success detected in URL');
-          setIsAuthenticated(true);
-          
-          // Do not clean up URL immediately - leave it for components to detect
-          // Components like InvoicePanel will handle URL cleanup after they've processed the auth success
-        }
+        const isAuthenticated = await checkQuickBooksAuth()
+        setIsQBConnected(isAuthenticated)
+        setShowConnect(!isAuthenticated)
+        setInitialLoad(false)
       } catch (error) {
-        console.error("Error checking authentication:", error)
-        setIsAuthenticated(false)
+        console.error('Error checking auth:', error)
+        setShowConnect(true)
+        setInitialLoad(false)
       }
     }
+    
     checkAuth()
+    
+    // Check URL for auth=success and clear it
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const authStatus = urlParams.get('auth')
+      if (authStatus === 'success') {
+        setIsQBConnected(true)
+        setShowConnect(false)
+        // Clean up URL after processing
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
   }, [])
 
   // Press D key 5 times to show debug panel
@@ -103,47 +102,10 @@ export default function Home() {
     setIsInvoicePanelOpen(open);
   }
 
-  // Show QuickBooks connect if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto py-12">
-          <QuickbooksConnect />
-          
-          {/* Always visible debug panel for troubleshooting */}
-          <div className="mt-8 border-t border-gray-200 pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Connection Troubleshooting</h2>
-              <div className="text-sm text-gray-500">Use these tools to debug connection issues</div>
-            </div>
-            
-            <div className="grid gap-4">
-              <DebugAction 
-                title="Check Auth Status" 
-                description="Check the current QuickBooks authentication status"
-                endpoint="/api/auth/status"
-              />
-              <DebugAction 
-                title="Fetch Invoices Directly" 
-                description="Attempt to directly fetch invoices from QuickBooks"
-                endpoint="/api/invoices"
-              />
-              <DebugAction 
-                title="Debug Tokens" 
-                description="Check the token status in cookies and memory"
-                endpoint="/api/auth/debug"
-              />
-              <DebugAction 
-                title="Manual Initialize" 
-                description="Try to manually initialize QuickBooks client"
-                endpoint="/api/auth/status"
-                method="POST"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+  // Handle successful QuickBooks connection
+  const handleQuickBooksConnected = () => {
+    setIsQBConnected(true)
+    setShowConnect(false)
   }
 
   // Debug panel component
@@ -214,28 +176,45 @@ export default function Home() {
 
   // Main app layout when authenticated
   return (
-    <div className="flex h-screen bg-white">
-      {/* Left Panel - Invoices */}
-      <div className={`${isInvoicePanelOpen ? 'w-1/3' : 'w-0'} border-r border-gray-200 overflow-hidden transition-width duration-300 ease-in-out`}>
-        <InvoicePanel
-          selectedInvoiceId={selectedInvoiceId}
-          onSelectInvoice={setSelectedInvoiceId}
-        />
-      </div>
-
-      {/* Right Panel - Chat and Tools */}
-      <div className={`${isInvoicePanelOpen ? 'w-2/3' : 'w-full'} flex flex-col transition-width duration-300 ease-in-out`}>
-        <div className="flex-1 overflow-hidden">
-          <AIChat 
-            onSelectInvoice={setSelectedInvoiceId} 
-            onToggleInvoicePanel={toggleInvoicePanel}
-            isInvoicePanelOpen={isInvoicePanelOpen}
-          />
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-xl font-medium text-gray-800">Invoice Management Dashboard</h1>
+          {!isQBConnected && !initialLoad && (
+            <button 
+              onClick={() => setShowConnect(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+            >
+              Connect QuickBooks
+            </button>
+          )}
         </div>
-        <div className="h-64 border-t border-gray-200 overflow-auto">
-          <ToolsPanel />
-        </div>
-      </div>
+      </header>
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {showConnect ? (
+          <div className="my-8">
+            <QuickbooksConnect 
+              initialError={null} 
+              onConnected={handleQuickBooksConnected}
+            />
+          </div>
+        ) : (
+          <div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <InvoicePanel />
+              </div>
+              <div className="lg:col-span-1">
+                <ToolsPanel />
+              </div>
+            </div>
+            <div className="mt-8">
+              <AIChat />
+            </div>
+          </div>
+        )}
+      </main>
       
       {/* Debug Panel */}
       {showDebug && <DebugPanel />}

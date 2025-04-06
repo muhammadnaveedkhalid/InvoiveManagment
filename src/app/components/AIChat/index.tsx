@@ -716,8 +716,13 @@ export default function AIChat({ onSelectInvoice, onToggleInvoicePanel, isInvoic
   }, [messages, onSelectInvoice]);
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto p-6 space-y-6" id="chat-messages-container">
+    <div className="h-full flex flex-col bg-white rounded-lg border border-gray-200 shadow-md overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-white">AI Invoice Assistant</h2>
+        <p className="text-blue-100 text-sm">Ask questions about your invoices and financial data</p>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 border-l border-r border-gray-200 bg-gray-50" id="chat-messages-container">
         {/* API Provider Badge */}
         <div className="flex justify-between mb-2">
           <div className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
@@ -741,31 +746,22 @@ export default function AIChat({ onSelectInvoice, onToggleInvoicePanel, isInvoic
         
         {/* Error Alert with more details */}
         {apiError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div className="flex">
+              <div className="py-1">
+                <svg className="fill-current h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm12.73-1.41A8 8 0 1 0 4.34 4.34a8 8 0 0 0 11.32 11.32zM9 11V9h2v6H9v-4zm0-6h2v2H9V5z"/>
                 </svg>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">AI Error</h3>
-                <div className="mt-1 text-sm text-red-700">{apiError}</div>
-                <div className="mt-3 flex space-x-2">
-                  <button
-                    onClick={handleRetry}
-                    disabled={isRetrying}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                  >
-                    {isRetrying ? 'Retrying...' : 'Retry Request'}
-                  </button>
-                  <button
-                    onClick={toggleProvider}
-                    className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    Try {useGroq ? 'OpenAI' : 'Groq'} Instead
-                  </button>
-                </div>
+              <div>
+                <p className="font-bold">Connection Error</p>
+                <p className="text-sm">{apiError}</p>
+                <button 
+                  onClick={handleRetry} 
+                  className="mt-2 bg-red-100 hover:bg-red-200 text-red-800 font-bold py-1 px-2 rounded text-xs inline-flex items-center"
+                >
+                  Try again
+                </button>
               </div>
             </div>
           </div>
@@ -779,10 +775,10 @@ export default function AIChat({ onSelectInvoice, onToggleInvoicePanel, isInvoic
             }`}
           >
             <div
-              className={`rounded-lg px-6 py-4 max-w-[80%] ${
+              className={`rounded-lg px-6 py-4 max-w-[80%] shadow-sm ${
                 message.role === 'user'
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100'
+                  : 'bg-white border border-gray-200'
               }`}
             >
               {renderMessageContent(message)}
@@ -798,42 +794,54 @@ export default function AIChat({ onSelectInvoice, onToggleInvoicePanel, isInvoic
         
         {isLoading && (
           <div className="flex justify-start">
-            <div className="rounded-lg px-6 py-4 bg-gray-100">
+            <div className="rounded-lg px-6 py-4 bg-white border border-gray-200 shadow-sm">
               <div className="flex space-x-2">
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-150"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-300"></div>
+                <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"></div>
+                <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce delay-150"></div>
+                <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce delay-300"></div>
               </div>
             </div>
           </div>
         )}
         
         {/* Help message if no messages yet */}
-        {messages.length === 0 && !isLoading && !apiError && (
-          <div className="flex justify-center items-center h-full">
-            <div className="text-center p-6 bg-blue-50 rounded-lg max-w-lg">
-              <h3 className="text-xl font-medium text-blue-800 mb-2">Welcome to Invoice Chat</h3>
-              <p className="text-blue-600 mb-4">
-                You can ask questions about your invoices, such as:
-              </p>
-              <ul className="text-left text-blue-700 space-y-2 mb-4">
-                <li>• "Show me my recent invoices"</li>
-                <li>• "What's the total amount billed last month?"</li>
-                <li>• "Give me details about invoice #1001"</li>
-                <li>• "Which customer has the highest outstanding balance?"</li>
-              </ul>
-              <p className="text-sm text-blue-500">
-                Your invoices are synced from QuickBooks and will be loaded when you ask about them.
-              </p>
-              <div className="mt-4 text-sm text-gray-500">
-                Using: {useGroq ? 'Groq AI' : 'OpenAI'} | <button onClick={toggleProvider} className="text-blue-500 hover:underline">Switch Provider</button>
+        {messages.length === 0 && !isLoading && (
+          <div className="text-center text-gray-500 p-6 bg-blue-50 rounded-lg border border-blue-100 shadow-sm">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-12 w-12 mx-auto text-blue-400 mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+              />
+            </svg>
+            <h3 className="text-lg font-medium text-blue-800 mb-2">How can I help you today?</h3>
+            <p className="mb-4">Ask me anything about your invoices or financial data.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto text-left">
+              <div className="bg-white p-3 rounded-md border border-blue-100 text-blue-800 text-sm">
+                "Show me invoice #1001"
+              </div>
+              <div className="bg-white p-3 rounded-md border border-blue-100 text-blue-800 text-sm">
+                "Summarize unpaid invoices"
+              </div>
+              <div className="bg-white p-3 rounded-md border border-blue-100 text-blue-800 text-sm">
+                "Which customer owes the most?"
+              </div>
+              <div className="bg-white p-3 rounded-md border border-blue-100 text-blue-800 text-sm">
+                "What was my revenue last month?"
               </div>
             </div>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleFormSubmit} className="p-6 border-t">
+      <form onSubmit={handleFormSubmit} className="p-6 border-t border-gray-200 bg-white">
         <div className="flex flex-col space-y-4">
           <div className="flex space-x-4">
             <input
@@ -842,14 +850,14 @@ export default function AIChat({ onSelectInvoice, onToggleInvoicePanel, isInvoic
               onChange={handleInputChange}
               placeholder="Ask about your invoices..."
               className={`flex-1 px-6 py-4 border rounded-lg focus:outline-none focus:ring-2 text-lg ${
-                showError && !input.trim() ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'
+                showError && !input.trim() ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
               }`}
               disabled={isLoading || toolState.isExecuting}
             />
             <button
               type="submit"
               disabled={isLoading || toolState.isExecuting || !input.trim()}
-              className="px-6 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 text-lg"
+              className="px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-lg transition-colors duration-150 shadow-sm"
             >
               Send
             </button>

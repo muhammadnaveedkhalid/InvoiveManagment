@@ -7,8 +7,8 @@ import QuickbooksConnect from '../QuickbooksConnect'
 import { isQuickBooksReady } from '@/lib/quickbooks/api'
 
 interface InvoicePanelProps {
-  selectedInvoiceId: string | null
-  onSelectInvoice: (id: string) => void
+  selectedInvoiceId?: string | null;
+  onSelectInvoice?: (id: string) => void;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
@@ -89,7 +89,10 @@ const fetchInvoices = async (): Promise<Invoice[]> => {
   }
 };
 
-export default function InvoicePanel({ selectedInvoiceId, onSelectInvoice }: InvoicePanelProps) {
+export default function InvoicePanel({ 
+  selectedInvoiceId = null, 
+  onSelectInvoice 
+}: InvoicePanelProps) {
   const [filter, setFilter] = useState('');
   const [showConnect, setShowConnect] = useState(true);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
@@ -261,6 +264,30 @@ export default function InvoicePanel({ selectedInvoiceId, onSelectInvoice }: Inv
     }
   }, [refetch, hasAttemptedAuth]);
 
+  // Check QuickBooks status on mount
+  useEffect(() => {
+    const checkQuickBooksStatus = async () => {
+      try {
+        if (invoices && invoices.length > 0) {
+                    // If we already have invoices, we can skip authentication check
+          setShowConnect(false);
+          return;
+        }
+        
+        const isAuthenticated = await checkQuickBooksAuth();
+        if (!isAuthenticated) {
+          setShowConnect(true);
+        } else {
+          setShowConnect(false);
+        }
+      } catch (err) {
+        console.error('Error checking QuickBooks status:', err);
+      }
+    };
+    
+    checkQuickBooksStatus();
+  }, [invoices?.length]);
+
   const filteredInvoices = invoices?.filter(invoice => 
     invoice.DocNumber.toLowerCase().includes(filter.toLowerCase()) ||
     invoice.CustomerRef.name.toLowerCase().includes(filter.toLowerCase())
@@ -384,61 +411,95 @@ export default function InvoicePanel({ selectedInvoiceId, onSelectInvoice }: Inv
 
   debugLog('Rendering invoice list with', invoices.length, 'invoices');
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200">
+    <div className="h-full flex flex-col bg-white rounded-lg shadow-md">
+      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">QuickBooks Invoices</h1>
-          <button
-            onClick={() => {
-              debugLog('Reconnect button clicked (header)');
-              setShowConnect(true);
-            }}
-            className="text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-full"
-          >
-            Reconnect to QuickBooks
-          </button>
+          <h1 className="text-2xl font-bold text-gray-800">QuickBooks Invoices</h1>
+          <div className="flex space-x-2">
+           
+            <button
+              onClick={() => {
+                debugLog('Reconnect button clicked (header)');
+                setShowConnect(true);
+              }}
+              className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md shadow-sm flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Reconnect
+            </button>
+          </div>
         </div>
-        <div className="mt-2">
-          <input
-            type="text"
-            placeholder="Search invoices..."
-            className="w-full p-2 border border-gray-300 rounded-md"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          />
+        <div className="mt-3">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by invoice number or customer name..."
+              className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+            <div className="absolute left-3 top-2.5 text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        {filteredInvoices?.map((invoice: Invoice) => (
-          <div
-            key={invoice.Id}
-            className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${
-              selectedInvoiceId === invoice.Id ? 'bg-blue-50' : ''
-            }`}
-            onClick={() => {
-              debugLog('Invoice selected:', invoice.Id);
-              onSelectInvoice(invoice.Id);
-            }}
-          >
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-medium">Invoice #{invoice.DocNumber}</h3>
-                <p className="text-sm text-gray-500">
-                  {invoice.CustomerRef.name}
-                </p>
+        {filteredInvoices && filteredInvoices.length > 0 ? (
+          <div className="divide-y divide-gray-200">
+            {filteredInvoices.map((invoice: Invoice) => (
+              <div
+                key={invoice.Id}
+                className={`p-4 cursor-pointer hover:bg-blue-50 transition-colors duration-150 ${
+                  selectedInvoiceId === invoice.Id ? 'bg-blue-100 border-l-4 border-blue-500' : ''
+                }`}
+                onClick={() => {
+                  debugLog('Invoice selected:', invoice.Id);
+                  if (onSelectInvoice) {
+                    onSelectInvoice(invoice.Id);
+                  }
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-medium text-lg text-gray-800">Invoice #{invoice.DocNumber}</h3>
+                    <p className="text-gray-600 mt-1">
+                      {invoice.CustomerRef.name}
+                    </p>
+                    <div className="mt-1 flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-2 ${(invoice.Balance || 0) > 0 ? 'bg-orange-500' : 'bg-green-500'}`}></div>
+                      <p className="text-sm text-gray-500">
+                        {(invoice.Balance || 0) > 0 ? 'Balance due' : 'Paid'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-lg font-bold ${(invoice.Balance || 0) > 0 ? 'text-orange-500' : 'text-green-600'}`}>
+                      ${Number(invoice.TotalAmt).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Date: {new Date(invoice.TxnDate).toLocaleDateString()}
+                    </p>
+                    {invoice.DueDate && (
+                      <p className="text-sm text-gray-500">
+                        Due: {new Date(invoice.DueDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="text-right">
-                <p className={`font-medium ${(invoice.Balance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  ${invoice.TotalAmt}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {new Date(invoice.TxnDate).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">No invoices match your search criteria</p>
+          </div>
+        )}
       </div>
     </div>
   );

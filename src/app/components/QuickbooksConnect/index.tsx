@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { getRedirectUriForDisplay } from '@/lib/quickbooks/api'
 import { initQuickBooksDirectly } from '@/lib/quickbooks/directAuth'
+import styles from './QuickbooksConnect.module.css'
 
 interface QuickbooksConnectProps {
   initialError?: string | null;
+  onConnected?: () => void;
 }
 
-export default function QuickbooksConnect({ initialError = null }: QuickbooksConnectProps) {
+export default function QuickbooksConnect({ initialError = null, onConnected }: QuickbooksConnectProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(initialError)
   const [detailedError, setDetailedError] = useState<string | null>(null)
@@ -35,6 +37,10 @@ export default function QuickbooksConnect({ initialError = null }: QuickbooksCon
     // Handle auth result
     if (status === 'success') {
       console.log('Authentication success detected in connect component')
+      // Call the onConnected callback if provided
+      if (onConnected) {
+        onConnected();
+      }
       // Don't clear URL parameters immediately - let other components detect the success
       // Other components will handle URL cleanup after they've processed the auth success
     } else if (status === 'error') {
@@ -59,7 +65,7 @@ export default function QuickbooksConnect({ initialError = null }: QuickbooksCon
     
     // Check connection status on load
     checkConnectionStatus();
-  }, [initialError]);
+  }, [initialError, onConnected]);
   
   // Function to check the current connection status
   const checkConnectionStatus = async () => {
@@ -77,6 +83,10 @@ export default function QuickbooksConnect({ initialError = null }: QuickbooksCon
       
       if (data.authenticated) {
         setAuthStatus('success');
+        // Call the onConnected callback if provided
+        if (onConnected) {
+          onConnected();
+        }
       }
     } catch (err) {
       console.error('Error checking connection status:', err);

@@ -125,11 +125,16 @@ export default function ToolsPanel() {
         
         // First check if QuickBooks is authenticated
         const isAuthenticated = await checkQuickBooksAuth()
-        if (!isAuthenticated) {
+        if (!isAuthenticated && !hasLoadedInvoices) {
           console.log('QuickBooks not authenticated, showing connect UI');
           setShowConnect(true);
           setIsLoading(false);
           return; // Don't try to fetch invoices if not authenticated
+        }
+        
+        // If we've already loaded invoices successfully, don't show connect UI again
+        if (hasLoadedInvoices) {
+          setShowConnect(false);
         }
         
         // Check for auth query params in case we just completed authentication
@@ -152,7 +157,7 @@ export default function ToolsPanel() {
     }
 
     checkQuickBooksStatus()
-  }, [])
+  }, [hasLoadedInvoices])
   
   // Set up a retry mechanism in case the first attempt fails
   useEffect(() => {

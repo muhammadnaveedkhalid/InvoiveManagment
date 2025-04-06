@@ -362,10 +362,42 @@ function getServerSideToken() {
         tokenExpiry: tokenStore.tokenExpiry
       };
     }
+
+    // Next, try localStorage if we're in a browser environment
+    if (typeof window !== 'undefined') {
+      const accessToken = localStorage.getItem(TOKEN_KEY);
+      const realmId = localStorage.getItem(REALM_ID_KEY);
+      
+      if (accessToken && realmId) {
+        console.log('Token found in localStorage');
+        
+        const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+        const tokenExpiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
+        
+        // Update memory store for future use
+        tokenStore.accessToken = accessToken;
+        tokenStore.realmId = realmId;
+        
+        if (refreshToken) {
+          tokenStore.refreshToken = refreshToken;
+        }
+        
+        if (tokenExpiryStr) {
+          tokenStore.tokenExpiry = parseInt(tokenExpiryStr, 10);
+        }
+        
+        return {
+          accessToken,
+          realmId,
+          refreshToken: refreshToken || undefined,
+          tokenExpiry: tokenExpiryStr ? parseInt(tokenExpiryStr, 10) : undefined
+        };
+      }
+    }
     
     // No dynamic imports - this causes issues in Next.js
     // The cookies will be passed by the invoices API route directly
-    console.log('No server-side token found in memory, check cookies in the API route');
+    console.log('No server-side token found in memory or localStorage, check cookies in the API route');
     return null;
   } catch (error) {
     console.error('Error getting server-side token:', error);
