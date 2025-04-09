@@ -200,17 +200,24 @@ export default function Home() {
             />
           </div>
         ) : (
-          <div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <InvoicePanel />
+          <div className="flex flex-col gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="h-[calc(100vh-16rem)]">
+                <InvoicePanel 
+                  selectedInvoiceId={selectedInvoiceId}
+                  onSelectInvoice={setSelectedInvoiceId}
+                />
               </div>
-              <div className="lg:col-span-1">
-                <ToolsPanel />
+              <div className="h-[calc(100vh-16rem)]">
+                <AIChat 
+                  onSelectInvoice={setSelectedInvoiceId}
+                  onToggleInvoicePanel={() => {}}
+                  isInvoicePanelOpen={true}
+                />
               </div>
             </div>
-            <div className="mt-8">
-              <AIChat />
+            <div className="w-full">
+              <ToolsPanel />
             </div>
           </div>
         )}

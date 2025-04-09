@@ -191,7 +191,7 @@ export default function QuickbooksConnect({ initialError = null, onConnected }: 
         hasToken: !!token,
         hasRealmId: !!realmId,
         hasRefreshToken: !!refreshToken,
-        tokenExpiry: expi
+        tokenExpiry: expiryStr
       };
     } catch (error) {
       console.error('Failed to get storage status:', error);
